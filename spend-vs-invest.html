@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DON'T SPEND IT</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #ff2b2b;
+    --green: #00e676;
+    --dark: #0a0a0a;
+    --mid: #111111;
+    --border: #222;
+    --text: #e8e8e8;
+    --muted: #555;
+  }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  header {
+    margin-bottom: 2.5rem;
+  }
+
+  .headline {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3.5rem, 14vw, 6rem);
+    line-height: 0.9;
+    letter-spacing: 0.02em;
+    color: #fff;
+  }
+
+  .headline span {
+    color: var(--red);
+  }
+
+  .sub {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 0.75rem;
+  }
+
+  .card {
+    background: var(--mid);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .input-wrap {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: #0d0d0d;
+    transition: border-color 0.2s;
+  }
+
+  .input-wrap:focus-within {
+    border-color: var(--green);
+  }
+
+  .currency {
+    padding: 0 1rem;
+    color: var(--muted);
+    font-size: 1.2rem;
+    font-family: 'Bebas Neue', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  input[type="number"] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 500;
+    padding: 0.85rem 0.5rem 0.85rem 0;
+    width: 100%;
+    -moz-appearance: textfield;
+  }
+
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .presets {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .preset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .preset:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  /* Result */
+  .result {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+  }
+
+  .result.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-header {
+    background: #0d0d0d;
+    padding: 1rem 2rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .result-body {
+    padding: 2rem;
+  }
+
+  .invested-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+  }
+
+  .invested-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 10vw, 4.5rem);
+    color: var(--green);
+    line-height: 1;
+    letter-spacing: 0.02em;
+  }
+
+  .gain-badge {
+    display: inline-block;
+    background: rgba(0, 230, 118, 0.1);
+    border: 1px solid rgba(0, 230, 118, 0.25);
+    color: var(--green);
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 2px;
+    margin-top: 0.75rem;
+    letter-spacing: 0.1em;
+  }
+
+  .timeline {
+    margin-top: 2rem;
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .year-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .year-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    min-width: 50px;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .year-value {
+    font-size: 0.7rem;
+    color: #aaa;
+    text-align: right;
+    min-width: 90px;
+    letter-spacing: 0.03em;
+  }
+
+  .year-value.highlight {
+    color: var(--green);
+    font-weight: 500;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.5rem 0;
+  }
+
+  .lost-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .lost-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .lost-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem;
+    color: var(--red);
+    letter-spacing: 0.05em;
+  }
+
+  .footer-note {
+    font-size: 0.6rem;
+    color: #333;
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin-top: 2rem;
+    line-height: 1.8;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .blink {
+    animation: pulse 1.5s infinite;
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <header>
+    <div class="headline">DON'T<br><span>SPEND</span><br>IT.</div>
+    <p class="sub">S&P 500 · 12% Annual Growth · 5 Years</p>
+  </header>
+
+  <div class="card">
+    <label>If instead of spending, you invested...</label>
+    <div class="input-wrap">
+      <span class="currency">$</span>
+      <input type="number" id="amount" placeholder="0" min="0" autofocus>
+    </div>
+    <div class="presets">
+      <button class="preset" data-val="50">$50</button>
+      <button class="preset" data-val="100">$100</button>
+      <button class="preset" data-val="250">$250</button>
+      <button class="preset" data-val="500">$500</button>
+      <button class="preset" data-val="1000">$1K</button>
+      <button class="preset" data-val="5000">$5K</button>
+    </div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="result-header">
+      5-YEAR PROJECTION · COMPOUND ANNUAL GROWTH
+    </div>
+    <div class="result-body">
+      <div class="invested-label">You'd have</div>
+      <div class="invested-amount" id="final-amount">$0</div>
+      <div class="gain-badge" id="gain-badge">+$0 gained (0%)</div>
+
+      <div class="timeline" id="timeline"></div>
+
+      <hr class="divider">
+
+      <div class="lost-section">
+        <div>
+          <div class="lost-label">Opportunity cost</div>
+          <div style="font-size:0.6rem;color:#333;letter-spacing:.1em;margin-top:2px;">what you're actually giving up</div>
+        </div>
+        <div class="lost-amount" id="opp-cost">$0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    PAST PERFORMANCE IS NOT INDICATIVE OF FUTURE RESULTS<br>
+    S&P 500 HAS AVERAGED ~10–12% ANNUALLY OVER THE LONG TERM
+  </div>
+</div>
+
+<script>
+  const input = document.getElementById('amount');
+  const result = document.getElementById('result');
+  const finalEl = document.getElementById('final-amount');
+  const gainEl = document.getElementById('gain-badge');
+  const timelineEl = document.getElementById('timeline');
+  const oppEl = document.getElementById('opp-cost');
+
+  const RATE = 0.12;
+  const YEARS = 5;
+
+  function fmt(n) {
+    if (n >= 1000000) return '$' + (n / 1000000).toFixed(2) + 'M';
+    if (n >= 10000) return '$' + (n / 1000).toFixed(1) + 'K';
+    return '$' + Math.round(n).toLocaleString();
+  }
+
+  function fmtFull(n) {
+    return '$' + Math.round(n).toLocaleString();
+  }
+
+  let animTimeout;
+
+  function calculate() {
+    const principal = parseFloat(input.value) || 0;
+
+    if (principal <= 0) {
+      result.classList.remove('visible');
+      return;
+    }
+
+    const yearlyValues = [];
+    for (let y = 1; y <= YEARS; y++) {
+      yearlyValues.push(principal * Math.pow(1 + RATE, y));
+    }
+
+    const final = yearlyValues[YEARS - 1];
+    const gain = final - principal;
+    const gainPct = ((final / principal - 1) * 100).toFixed(0);
+
+    finalEl.textContent = fmtFull(final);
+    gainEl.textContent = `+${fmtFull(gain)} gained (${gainPct}%)`;
+    oppEl.textContent = fmtFull(gain);
+
+    // Build timeline
+    timelineEl.innerHTML = '';
+    yearlyValues.forEach((val, i) => {
+      const pct = (val / final) * 100;
+      const row = document.createElement('div');
+      row.className = 'year-row';
+      row.innerHTML = `
+        <span class="year-label">YR ${i + 1}</span>
+        <div class="bar-track"><div class="bar-fill" data-pct="${pct}" style="width:0%"></div></div>
+        <span class="year-value ${i === YEARS - 1 ? 'highlight' : ''}">${fmt(val)}</span>
+      `;
+      timelineEl.appendChild(row);
+    });
+
+    result.classList.add('visible');
+
+    // Animate bars after render
+    clearTimeout(animTimeout);
+    animTimeout = setTimeout(() => {
+      document.querySelectorAll('.bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.pct + '%';
+      });
+    }, 50);
+  }
+
+  input.addEventListener('input', calculate);
+
+  document.querySelectorAll('.preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      input.value = btn.dataset.val;
+      calculate();
+      input.focus();
+    });
+  });
+
+  // Initial calculation if prefilled
+  calculate();
+</script>
+</body>
+</html>
